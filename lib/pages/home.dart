@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mysqli_attempt_3/models/product.dart';
+import 'package:mysqli_attempt_3/pages/edit-product.dart';
 import 'dart:math';
 import 'package:mysqli_attempt_3/services/db.dart';
 import 'package:mysqli_attempt_3/ui/product_card.dart';
@@ -26,11 +27,10 @@ class _HomeState extends State<Home> {
       appBar: AppBar(
         title: Text("SQL Second lesson"),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: ()  {
-
+      floatingActionButton: FloatingActionButton.extended(
+        label: Text("Add Product"),
+        onPressed: () {
           addProduct();
-
 
           // insert();
         },
@@ -39,26 +39,39 @@ class _HomeState extends State<Home> {
         child: Column(
           children: productList.map((product) {
             return ProductCard(
-                product: product,
-                delete: () async {
-                  await delete(product);
-                  setState(() {
-                    refresh();
-                  });
+              product: product,
+              delete: () async {
+                await delete(product);
+                setState(() {
+                  refresh();
                 });
+              },
+              update: () async {
+                // final coordinates = await Navigator.pushNamed(context, '/addProduct');
+                final coordinates = await Navigator.pushNamed(context, '/editProduct',
+                    arguments: product);
+
+                Map valueMap = Map.from(coordinates);
+                print(valueMap["barcode"]);
+
+                product.name = valueMap["name"];
+                product.barcode = valueMap["barcode"];
+                product.price = valueMap["price"];
+
+                await DB.update(Product.table, product);
+
+                refresh();
+              },
+            );
           }).toList(),
         ),
       ),
     );
   }
 
-  Future<void> insert() async {
-
-  }
+  Future<void> insert() async {}
 
   void refresh() async {
-    Random rng = new Random();
-
     List<Map<String, dynamic>> _results = await DB.query(Product.table);
     productList = _results.map((item) => Product.fromMap(item)).toList();
     setState(() {
@@ -72,8 +85,8 @@ class _HomeState extends State<Home> {
     refresh();
   }
 
-  void addProduct() async{
-    final coordinates = await Navigator.pushNamed(context,'/addProduct');
+  void addProduct() async {
+    final coordinates = await Navigator.pushNamed(context, '/addProduct');
 
     Map valueMap = Map.from(coordinates);
     print(valueMap["barcode"]);
@@ -82,7 +95,7 @@ class _HomeState extends State<Home> {
     await DB.insert(
         table: Product.table,
         model: Product(
-            id:rng.nextInt(999999999) ,
+            id: rng.nextInt(999999999),
             barcode: valueMap["barcode"],
             name: valueMap["name"],
             price: valueMap["price"]));
